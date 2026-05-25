@@ -12,8 +12,6 @@ An internal web application for the AA Service, Maintenance & Repair team to rep
 | .NET SDK | 8.x | `brew install dotnet@8` |
 | Node.js | 18+ | [nodejs.org](https://nodejs.org/) |
 
-> **macOS note**: if `dotnet` resolves to a different version, prefix commands with the full path: `/opt/homebrew/Cellar/dotnet@8/8.0.127/bin/dotnet`
-
 ---
 
 ## Running the project
@@ -30,8 +28,10 @@ Starts SQL Server 2022 on `localhost:1433`. SA password: `SMR_Dev_2024!`
 
 ```bash
 cd backend/SmrScheduler.Api
-dotnet run
+/opt/homebrew/Cellar/dotnet@8/8.0.127/bin/dotnet run
 ```
+
+> **macOS note**: the project targets .NET 8. If your default `dotnet` is a later version (check with `dotnet --version`), use the full path above. You can also add it to your shell: `export PATH="/opt/homebrew/Cellar/dotnet@8/8.0.127/bin:$PATH"`.
 
 - API: `http://localhost:5000`
 - Swagger UI: `http://localhost:5000/swagger`
