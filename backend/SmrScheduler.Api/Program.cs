@@ -199,6 +199,83 @@ app.MapPost("/api/appointments", async (CreateAppointmentRequest req, SmrSchedul
     });
 });
 
+app.MapGet("/api/appointments/{id:int}", async (int id, SmrSchedulerDbContext db) =>
+{
+    var appointment = await db.Appointments
+        .Include(a => a.Slot).ThenInclude(s => s.Mechanic)
+        .Include(a => a.ServiceType)
+        .Include(a => a.WorkNotes)
+        .FirstOrDefaultAsync(a => a.Id == id);
+
+    if (appointment == null)
+        return Results.NotFound("Appointment not found.");
+
+    return Results.Ok(new
+    {
+        appointment.Id,
+        appointment.ReferenceNumber,
+        appointment.CustomerName,
+        appointment.Phone,
+        appointment.VehicleReg,
+        appointment.Notes,
+        Status = appointment.Status.ToString(),
+        appointment.CreatedAt,
+        StartTime = appointment.Slot.StartTime,
+        appointment.Slot.DurationMinutes,
+        MechanicId = appointment.Slot.MechanicId,
+        MechanicName = appointment.Slot.Mechanic.Name,
+        appointment.ServiceTypeId,
+        ServiceTypeName = appointment.ServiceType.Name,
+        WorkNotes = appointment.WorkNotes
+            .OrderBy(w => w.CreatedAt)
+            .Select(w => new { w.Id, w.Content, w.CreatedAt })
+            .ToList()
+    });
+});
+
+app.MapMethods("/api/appointments/{id:int}/status", ["PATCH"], async (int id, UpdateStatusRequest req, SmrSchedulerDbContext db) =>
+{
+    var appointment = await db.Appointments.FindAsync(id);
+    if (appointment == null)
+        return Results.NotFound("Appointment not found.");
+
+    if (!Enum.TryParse<AppointmentStatus>(req.Status, out var newStatus))
+        return Results.BadRequest("Invalid status value.");
+
+    if (!AppointmentStatusHelper.IsValidTransition(appointment.Status, newStatus))
+        return Results.BadRequest("Invalid status transition.");
+
+    appointment.Status = newStatus;
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new { appointment.Id, Status = appointment.Status.ToString() });
+});
+
+app.MapPost("/api/appointments/{id:int}/notes", async (int id, AddNoteRequest req, SmrSchedulerDbContext db) =>
+{
+    var appointment = await db.Appointments.FindAsync(id);
+    if (appointment == null)
+        return Results.NotFound("Appointment not found.");
+
+    var note = new WorkNote
+    {
+        AppointmentId = id,
+        Content = req.Content,
+        CreatedAt = DateTime.UtcNow
+    };
+
+    db.WorkNotes.Add(note);
+    await db.SaveChangesAsync();
+
+    return Results.Created($"/api/appointments/{id}/notes/{note.Id}", new
+    {
+        note.Id,
+        note.AppointmentId,
+        note.Content,
+        note.CreatedAt
+    });
+});
+
 app.Run();
 
 record CreateAppointmentRequest(
@@ -210,8 +287,23 @@ record CreateAppointmentRequest(
     string? Notes
 );
 
+record UpdateStatusRequest(string Status);
+record AddNoteRequest(string Content);
+
 public static class AppointmentHelper
 {
     public static string GenerateReferenceNumber(DateTime date, int sequence) =>
         $"SMR-{date:yyyyMMdd}-{sequence:D4}";
+}
+
+public static class AppointmentStatusHelper
+{
+    public static bool IsValidTransition(AppointmentStatus from, AppointmentStatus to) =>
+        (from, to) switch
+        {
+            (AppointmentStatus.Scheduled, AppointmentStatus.InProgress) => true,
+            (AppointmentStatus.InProgress, AppointmentStatus.Completed) => true,
+            (AppointmentStatus.InProgress, AppointmentStatus.NoShow) => true,
+            _ => false
+        };
 }
