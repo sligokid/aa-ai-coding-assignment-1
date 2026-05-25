@@ -51,6 +51,17 @@ npm run dev
 
 ---
 
+## Running the tests
+
+```bash
+cd backend
+dotnet test
+```
+
+Uses EF Core InMemory — no Docker required. 12 tests covering reference number format, status transitions, and double-booking (unit + integration).
+
+---
+
 ## Project structure
 
 ```
@@ -58,17 +69,23 @@ npm run dev
 ├── docker-compose.yml          # SQL Server container
 ├── backend/
 │   ├── SmrScheduler.sln
-│   └── SmrScheduler.Api/       # .NET 8 Web API
-│       ├── Data/               # EF Core DbContext + DbSeeder
-│       ├── Migrations/         # EF Core migrations (hand-authored)
-│       ├── Models/             # Branch, Mechanic, ServiceType, Slot, Appointment, WorkNote
-│       └── Program.cs          # Minimal API endpoints
+│   ├── SmrScheduler.Api/       # .NET 8 Web API
+│   │   ├── Data/               # EF Core DbContext + DbSeeder
+│   │   ├── Migrations/         # EF Core migrations (hand-authored)
+│   │   ├── Models/             # Branch, Mechanic, ServiceType, Slot, Appointment, WorkNote
+│   │   └── Program.cs          # Minimal API endpoints + AppointmentHelper + AppointmentStatusHelper
+│   └── SmrScheduler.Tests/     # xUnit test project
+│       ├── ReferenceNumberTests.cs
+│       ├── StatusTransitionTests.cs
+│       ├── DoubleBookingUnitTests.cs
+│       ├── DoubleBookingIntegrationTests.cs
+│       └── TestWebApplicationFactory.cs
 └── frontend/
     └── smr-ui/                 # Vite React app
         └── src/
             ├── components/     # NavBar, AppointmentCard, StatusBadge
             ├── context/        # RoleContext (admin/mechanic role + localStorage)
-            └── pages/          # HomePage
+            └── pages/          # HomePage, BookingPage, MechanicPage, AppointmentDetail
 ```
 
 ---
@@ -91,27 +108,33 @@ npm run dev
 ### Done
 - [x] SQL Server Docker setup
 - [x] .NET 8 Web API with EF Core, Swagger, CORS
-- [x] Auto-migrations and idempotent seed on startup
+- [x] Auto-migrations and idempotent seed on startup (`EnsureCreatedAsync` + `DbSeeder`)
 - [x] `GET /api/health`
 - [x] All EF Core entities: `Branch`, `Mechanic`, `ServiceType`, `Slot`, `Appointment`, `WorkNote`
 - [x] Unique index on `Appointments.SlotId` (double-booking guard)
-- [x] Seed data: 2 branches, 3 mechanics, 4 service types, ~192 hourly slots
+- [x] Seed data: 2 branches, 3 mechanics, 4 service types, ~192 hourly slots (today + 7 days)
 - [x] `GET /api/mechanics` — all mechanics with branch name
+- [x] `GET /api/branches`, `GET /api/service-types`
+- [x] `GET /api/slots?branchId=&from=&to=` — available (unbooked) slots with mechanic and branch info
 - [x] `GET /api/appointments?date=today` — today's appointments with mechanic, service type, status
+- [x] `GET /api/appointments?mechanicId=&date=` — mechanic's appointments for a given date
+- [x] `GET /api/appointments/:id` — full appointment detail including work notes
+- [x] `POST /api/appointments` — creates booking; app-layer + DB-constraint double-booking prevention; returns `SMR-YYYYMMDD-XXXX` reference number; `409 Conflict` if slot taken
+- [x] `PATCH /api/appointments/:id/status` — validates transitions (`Scheduled→InProgress`, `InProgress→Completed`, `InProgress→NoShow`); rejects all others with `400`
+- [x] `POST /api/appointments/:id/notes` — appends timestamped work note; returns `201`
 - [x] `NavBar` with role-switcher dropdown (Admin + each mechanic by name)
 - [x] Role context persisted to `localStorage`; restored on page refresh
 - [x] `HomePage` — today's schedule grouped by mechanic, with `AppointmentCard` and `StatusBadge`
-- [x] Vite React app with Tailwind + React Router
+- [x] `BookingPage` — slot browser with branch/service-type filter, booking form, confirmation screen with reference number
+- [x] `MechanicPage` — today and tomorrow sections; each card links to appointment detail
+- [x] `AppointmentDetail` — customer info, vehicle, service, work notes with inline form, status transition buttons
+- [x] xUnit test project (`SmrScheduler.Tests`) — 12 tests, `dotnet test` green
 
-### Not yet implemented
-- [ ] `GET /api/slots?branchId=&from=&to=` — available slots for booking
-- [ ] `GET /api/branches`, `GET /api/service-types`
-- [ ] `POST /api/appointments` with double-booking prevention and reference number generation
-- [ ] `GET /api/appointments/:id` — full appointment detail
-- [ ] `PATCH /api/appointments/:id/status` with transition validation
-- [ ] `POST /api/appointments/:id/notes`
-- [ ] `BookingPage`, `MechanicPage`, `AppointmentDetail` pages
-- [ ] xUnit test project
+### Not in scope (per spec)
+- Authentication / login
+- Email or SMS notifications
+- Rescheduling and cancellation
+- Pagination or search
 
 ---
 
@@ -158,4 +181,4 @@ The following prompts drove the main AI-assisted work sessions:
 **Admin home (issue 002)**
 > "Implement issue 002 (Admin Home): all EF Core entities, hand-authored migration, idempotent seed, GET /api/mechanics and GET /api/appointments?date=today endpoints, NavBar with role switcher, RoleContext with localStorage persistence, HomePage grouped by mechanic with AppointmentCard and StatusBadge."
 
-Subsequent slices follow the same pattern: pass the issue file as context, run `/tdd` to implement it, verify feedback loops (`dotnet build` + `npm run build`), commit.
+Subsequent slices follow the same pattern: pass the issue file as context, run `/tdd` to implement it, verify feedback loops (`dotnet build` + `npm run build` + `dotnet test`), commit.
