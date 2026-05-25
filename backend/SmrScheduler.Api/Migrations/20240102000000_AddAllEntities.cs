@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace SmrScheduler.Api.Migrations;
 
+[Migration("20240102000000_AddAllEntities")]
+
 public partial class AddAllEntities : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
