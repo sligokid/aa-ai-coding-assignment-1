@@ -16,24 +16,6 @@ An internal web application for the AA Service, Maintenance & Repair team to rep
 
 ## Running the project
 
-### Docker (single command — all services)
-
-```bash
-docker-compose up --build
-```
-
-Starts SQL Server, the API, and the frontend. Use `--build` when source files have changed; omit it on subsequent runs to reuse cached images.
-
-| Service    | URL                        |
-|------------|----------------------------|
-| Frontend   | http://localhost           |
-| API        | http://localhost:5000      |
-| SQL Server | localhost:1433             |
-
----
-
-### Local dev (manual)
-
 ### 1. Start the database
 
 ```bash
@@ -48,8 +30,6 @@ Starts SQL Server 2022 on `localhost:1433`. SA password: `SMR_Dev_2024!`
 cd backend/SmrScheduler.Api
 /opt/homebrew/Cellar/dotnet@8/8.0.127/bin/dotnet run
 ```
-
-> **macOS note**: the project targets .NET 8. If your default `dotnet` is a later version (check with `dotnet --version`), use the full path above. You can also add it to your shell: `export PATH="/opt/homebrew/Cellar/dotnet@8/8.0.127/bin:$PATH"`.
 
 - API: `http://localhost:5000`
 - Swagger UI: `http://localhost:5000/swagger`
@@ -84,11 +64,10 @@ Uses EF Core InMemory — no Docker required. 12 tests covering reference number
 
 ```
 .
-├── docker-compose.yml          # SQL Server + API + frontend containers
+├── docker-compose.yml          # SQL Server container
 ├── backend/
 │   ├── SmrScheduler.sln
 │   ├── SmrScheduler.Api/       # .NET 8 Web API
-│   │   ├── Dockerfile          # Multi-stage .NET 8 build
 │   │   ├── Data/               # EF Core DbContext + DbSeeder
 │   │   ├── Migrations/         # EF Core migrations (hand-authored)
 │   │   ├── Models/             # Branch, Mechanic, ServiceType, Slot, Appointment, WorkNote
@@ -101,8 +80,6 @@ Uses EF Core InMemory — no Docker required. 12 tests covering reference number
 │       └── TestWebApplicationFactory.cs
 └── frontend/
     └── smr-ui/                 # Vite React app
-        ├── Dockerfile          # Multi-stage Node/Nginx build
-        ├── nginx.conf          # SPA routing + /api/ reverse proxy to API container
         └── src/
             ├── components/     # NavBar, AppointmentCard, StatusBadge
             ├── context/        # RoleContext (admin/mechanic role + localStorage)
@@ -161,7 +138,7 @@ Uses EF Core InMemory — no Docker required. 12 tests covering reference number
 
 ## Known rough edges
 
-- **Port hardcoded (local dev only)**: the Vite dev proxy forwards `/api/*` to `http://localhost:5000`. In Docker, Nginx handles the proxy transparently.
+- **Port hardcoded**: the React app fetches `http://localhost:5000` directly. A proper setup would use a Vite proxy or env variable.
 - **No auth**: the role switcher is a dropdown stored in localStorage — sufficient per spec but not production-safe.
 - **SA credentials in config**: `appsettings.json` contains the SA password in plain text. Fine for local dev; would use secrets management in production.
 - **Seed idempotency**: seed data checks for existing rows before inserting. If you change seed data, truncate the tables first.
@@ -203,3 +180,5 @@ The following prompts drove the main AI-assisted work sessions:
 > "Implement issue 002 (Admin Home): all EF Core entities, hand-authored migration, idempotent seed, GET /api/mechanics and GET /api/appointments?date=today endpoints, NavBar with role switcher, RoleContext with localStorage persistence, HomePage grouped by mechanic with AppointmentCard and StatusBadge."
 
 Subsequent slices follow the same pattern: pass the issue file as context, run `/tdd` to implement it, verify feedback loops (`dotnet build` + `npm run build` + `dotnet test`), commit.
+
+kmcgowan 25/5/2026

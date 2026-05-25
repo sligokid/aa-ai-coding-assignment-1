@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { StatusBadge } from '../components/StatusBadge'
 
 type AppointmentStatus = 'Scheduled' | 'InProgress' | 'Completed' | 'NoShow'
@@ -21,6 +21,27 @@ interface AppointmentDetailData {
   status: AppointmentStatus
   startTime: string
   workNotes: WorkNote[]
+}
+
+const headerBg: Record<AppointmentStatus, string> = {
+  Scheduled:  'bg-blue-600',
+  InProgress: 'bg-[#FFD100]',
+  Completed:  'bg-emerald-600',
+  NoShow:     'bg-gray-500',
+}
+
+const headerText: Record<AppointmentStatus, string> = {
+  Scheduled:  'text-white',
+  InProgress: 'text-black',
+  Completed:  'text-white',
+  NoShow:     'text-white',
+}
+
+const headerSubText: Record<AppointmentStatus, string> = {
+  Scheduled:  'text-blue-100',
+  InProgress: 'text-black/60',
+  Completed:  'text-emerald-100',
+  NoShow:     'text-gray-300',
 }
 
 export function AppointmentDetail() {
@@ -77,53 +98,68 @@ export function AppointmentDetail() {
     }
   }
 
-  if (loading) return <p className="p-8 text-gray-500">Loading appointment...</p>
+  if (loading) return (
+    <div className="flex items-center justify-center h-64 text-gray-400 text-sm">Loading appointment…</div>
+  )
   if (error || !appointment) return <p className="p-8 text-red-500">{error ?? 'Appointment not found.'}</p>
 
   const isTerminal = appointment.status === 'Completed' || appointment.status === 'NoShow'
+  const startTime = new Date(appointment.startTime)
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{appointment.customerName}</h1>
-          <p className="text-sm text-gray-500">{appointment.referenceNumber}</p>
-        </div>
-        <StatusBadge status={appointment.status} />
-      </div>
+    <div className="max-w-2xl mx-auto p-6 space-y-5">
+      <Link to="/mechanic" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors">
+        ← Back to schedule
+      </Link>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-2">
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <span className="text-gray-500">Phone</span>
-          <span className="font-medium">{appointment.phone}</span>
-          <span className="text-gray-500">Vehicle</span>
-          <span className="font-medium">{appointment.vehicleReg}</span>
-          <span className="text-gray-500">Service</span>
-          <span className="font-medium">{appointment.serviceTypeName}</span>
-          <span className="text-gray-500">Time</span>
-          <span className="font-medium">
-            {new Date(appointment.startTime).toLocaleString('en-IE', {
-              dateStyle: 'medium',
-              timeStyle: 'short',
-              hour12: false,
-            })}
-          </span>
-        </div>
-        {appointment.notes && (
-          <div className="pt-2 border-t">
-            <p className="text-sm text-gray-500 mb-1">Customer notes</p>
-            <p className="text-sm">{appointment.notes}</p>
+      {/* Status header */}
+      <div className={`rounded-xl p-5 ${headerBg[appointment.status]} ${headerText[appointment.status]}`}>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className={`text-xs font-semibold uppercase tracking-wider mb-1 ${headerSubText[appointment.status]}`}>
+              {appointment.referenceNumber}
+            </p>
+            <h1 className="text-2xl font-bold">{appointment.customerName}</h1>
+            <p className={`text-sm mt-1 ${headerSubText[appointment.status]}`}>
+              {startTime.toLocaleDateString('en-IE', { weekday: 'long', day: 'numeric', month: 'long' })}
+              {' · '}
+              {startTime.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit', hour12: false })}
+            </p>
           </div>
-        )}
+          <StatusBadge status={appointment.status} />
+        </div>
       </div>
 
+      {/* Info */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="divide-y divide-gray-50">
+          {([
+            ['Phone',   appointment.phone],
+            ['Vehicle', appointment.vehicleReg],
+            ['Service', appointment.serviceTypeName],
+          ] as [string, string][]).map(([label, value]) => (
+            <div key={label} className="flex items-center px-5 py-3.5">
+              <span className="text-sm text-gray-400 w-24 flex-shrink-0">{label}</span>
+              <span className="text-sm font-medium text-gray-900">{value}</span>
+            </div>
+          ))}
+          {appointment.notes && (
+            <div className="px-5 py-3.5">
+              <span className="text-sm text-gray-400 block mb-1">Customer notes</span>
+              <span className="text-sm text-gray-700">{appointment.notes}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Status actions */}
       {!isTerminal && (
         <div className="flex gap-3">
           {appointment.status === 'Scheduled' && (
             <button
               onClick={() => handleStatusUpdate('InProgress')}
               disabled={statusUpdating}
-              className="px-4 py-2 bg-yellow-500 text-white rounded-lg font-medium hover:bg-yellow-600 disabled:opacity-50"
+              className="px-5 py-2.5 bg-[#FFD100] text-black rounded-lg font-semibold text-sm hover:bg-yellow-400 disabled:opacity-50 transition-colors shadow-sm"
             >
               Start Job
             </button>
@@ -133,14 +169,14 @@ export function AppointmentDetail() {
               <button
                 onClick={() => handleStatusUpdate('Completed')}
                 disabled={statusUpdating}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50"
+                className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-sm"
               >
-                Complete
+                Mark Complete
               </button>
               <button
                 onClick={() => handleStatusUpdate('NoShow')}
                 disabled={statusUpdating}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg font-medium hover:bg-gray-600 disabled:opacity-50"
+                className="px-5 py-2.5 bg-white text-gray-700 border border-gray-200 rounded-lg font-semibold text-sm hover:bg-gray-50 disabled:opacity-50 transition-colors shadow-sm"
               >
                 No-Show
               </button>
@@ -149,43 +185,48 @@ export function AppointmentDetail() {
         </div>
       )}
 
-      <div>
-        <h2 className="text-lg font-semibold text-gray-800 mb-3">Work Notes</h2>
-        {appointment.workNotes.length === 0 ? (
-          <p className="text-sm text-gray-500">No notes yet.</p>
-        ) : (
-          <ul className="space-y-2">
-            {appointment.workNotes.map(note => (
-              <li key={note.id} className="bg-gray-50 border border-gray-200 rounded p-3">
-                <p className="text-xs text-gray-400 mb-1">
-                  {new Date(note.createdAt).toLocaleString('en-IE', {
-                    dateStyle: 'medium',
-                    timeStyle: 'short',
-                    hour12: false,
-                  })}
-                </p>
-                <p className="text-sm">{note.content}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <form onSubmit={handleAddNote} className="mt-4 space-y-2">
-          <textarea
-            value={noteContent}
-            onChange={e => setNoteContent(e.target.value)}
-            placeholder="Add a work note..."
-            rows={3}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <button
-            type="submit"
-            disabled={submittingNote || !noteContent.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-          >
-            Add Note
-          </button>
-        </form>
+      {/* Work notes */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+        <div className="px-5 py-4 border-b border-gray-50">
+          <h2 className="font-semibold text-gray-900">Work Notes</h2>
+        </div>
+        <div className="px-5 py-4">
+          {appointment.workNotes.length === 0 ? (
+            <p className="text-sm text-gray-400">No notes yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {appointment.workNotes.map(note => (
+                <div key={note.id} className="flex gap-3">
+                  <div className="mt-1.5 h-2 w-2 rounded-full bg-[#FFD100] flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">
+                      {new Date(note.createdAt).toLocaleString('en-IE', { dateStyle: 'medium', timeStyle: 'short', hour12: false })}
+                    </p>
+                    <p className="text-sm text-gray-800">{note.content}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="px-5 pb-5 border-t border-gray-50 pt-4">
+          <form onSubmit={handleAddNote} className="space-y-2">
+            <textarea
+              value={noteContent}
+              onChange={e => setNoteContent(e.target.value)}
+              placeholder="Add a work note…"
+              rows={3}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFD100] focus:border-transparent resize-none"
+            />
+            <button
+              type="submit"
+              disabled={submittingNote || !noteContent.trim()}
+              className="px-4 py-2 bg-black text-white rounded-lg text-sm font-semibold hover:bg-gray-800 disabled:opacity-40 transition-colors"
+            >
+              Add Note
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   )

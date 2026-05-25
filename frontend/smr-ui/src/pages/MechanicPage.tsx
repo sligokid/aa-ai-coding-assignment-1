@@ -31,20 +31,33 @@ function useAppointments(mechanicId: number, date: string) {
   return { appointments, loading, error }
 }
 
-function AppointmentSection({ title, mechanicId, date }: { title: string; mechanicId: number; date: string }) {
+function AppointmentSection({ title, accent, mechanicId, date }: {
+  title: string
+  accent: string
+  mechanicId: number
+  date: string
+}) {
   const { appointments, loading, error } = useAppointments(mechanicId, date)
 
   return (
     <section>
-      <h2 className="text-lg font-semibold text-gray-700 mb-3 border-b pb-1">{title}</h2>
-      {loading && <p className="text-gray-500 text-sm">Loading...</p>}
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      <div className="flex items-center gap-3 mb-3">
+        <div className={`h-1.5 w-6 rounded-full ${accent}`} />
+        <h2 className="text-base font-semibold text-gray-800">{title}</h2>
+        {!loading && !error && (
+          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+            {appointments.length} job{appointments.length !== 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
+      {loading && <p className="text-gray-400 text-sm pl-9">Loading…</p>}
+      {error && <p className="text-red-500 text-sm pl-9">{error}</p>}
       {!loading && !error && appointments.length === 0 && (
-        <p className="text-gray-500 text-sm">No appointments.</p>
+        <p className="text-gray-400 text-sm pl-9">No appointments.</p>
       )}
-      <div className="space-y-2">
+      <div className="space-y-2 pl-9">
         {appointments.map(a => (
-          <Link key={a.id} to={`/mechanic/${a.id}`} className="block hover:opacity-80 transition-opacity">
+          <Link key={a.id} to={`/mechanic/${a.id}`} className="block hover:opacity-90 transition-opacity">
             <AppointmentCard
               customerName={a.customerName}
               vehicleReg={a.vehicleReg}
@@ -63,7 +76,11 @@ export function MechanicPage() {
   const { role } = useRole()
 
   if (role.type !== 'mechanic') {
-    return <p className="p-8 text-gray-500">Please select a mechanic role.</p>
+    return (
+      <div className="flex items-center justify-center h-64 text-gray-400">
+        Please select a mechanic role from the menu above.
+      </div>
+    )
   }
 
   const todayISO = new Date().toISOString().slice(0, 10)
@@ -71,10 +88,13 @@ export function MechanicPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">{role.mechanicName}'s Schedule</h1>
-      <div className="space-y-8">
-        <AppointmentSection title="Today" mechanicId={role.mechanicId} date={todayISO} />
-        <AppointmentSection title="Tomorrow" mechanicId={role.mechanicId} date={tomorrowISO} />
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">{role.mechanicName}</h1>
+        <p className="text-sm text-gray-500 mt-1">Your schedule</p>
+      </div>
+      <div className="space-y-10">
+        <AppointmentSection title="Today" accent="bg-[#FFD100]" mechanicId={role.mechanicId} date={todayISO} />
+        <AppointmentSection title="Tomorrow" accent="bg-blue-400" mechanicId={role.mechanicId} date={tomorrowISO} />
       </div>
     </div>
   )

@@ -10,13 +10,17 @@ export default function App() {
   return (
     <RoleProvider>
       <BrowserRouter>
-        <NavBar />
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/booking" element={<BookingPage />} />
-          <Route path="/mechanic" element={<MechanicPage />} />
-          <Route path="/mechanic/:id" element={<AppointmentDetail />} />
-        </Routes>
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+          <NavBar />
+          <main className="flex-1">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/booking" element={<BookingPage />} />
+              <Route path="/mechanic" element={<MechanicPage />} />
+              <Route path="/mechanic/:id" element={<AppointmentDetail />} />
+            </Routes>
+          </main>
+        </div>
       </BrowserRouter>
     </RoleProvider>
   )
