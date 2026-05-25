@@ -16,6 +16,24 @@ An internal web application for the AA Service, Maintenance & Repair team to rep
 
 ## Running the project
 
+### Docker (single command — all services)
+
+```bash
+docker-compose up --build
+```
+
+Starts SQL Server, the API, and the frontend. Use `--build` when source files have changed; omit it on subsequent runs to reuse cached images.
+
+| Service    | URL                        |
+|------------|----------------------------|
+| Frontend   | http://localhost           |
+| API        | http://localhost:5000      |
+| SQL Server | localhost:1433             |
+
+---
+
+### Local dev (manual)
+
 ### 1. Start the database
 
 ```bash
@@ -66,10 +84,11 @@ Uses EF Core InMemory — no Docker required. 12 tests covering reference number
 
 ```
 .
-├── docker-compose.yml          # SQL Server container
+├── docker-compose.yml          # SQL Server + API + frontend containers
 ├── backend/
 │   ├── SmrScheduler.sln
 │   ├── SmrScheduler.Api/       # .NET 8 Web API
+│   │   ├── Dockerfile          # Multi-stage .NET 8 build
 │   │   ├── Data/               # EF Core DbContext + DbSeeder
 │   │   ├── Migrations/         # EF Core migrations (hand-authored)
 │   │   ├── Models/             # Branch, Mechanic, ServiceType, Slot, Appointment, WorkNote
@@ -82,6 +101,8 @@ Uses EF Core InMemory — no Docker required. 12 tests covering reference number
 │       └── TestWebApplicationFactory.cs
 └── frontend/
     └── smr-ui/                 # Vite React app
+        ├── Dockerfile          # Multi-stage Node/Nginx build
+        ├── nginx.conf          # SPA routing + /api/ reverse proxy to API container
         └── src/
             ├── components/     # NavBar, AppointmentCard, StatusBadge
             ├── context/        # RoleContext (admin/mechanic role + localStorage)
@@ -140,7 +161,7 @@ Uses EF Core InMemory — no Docker required. 12 tests covering reference number
 
 ## Known rough edges
 
-- **Port hardcoded**: the React app fetches `http://localhost:5000` directly. A proper setup would use a Vite proxy or env variable.
+- **Port hardcoded (local dev only)**: the Vite dev proxy forwards `/api/*` to `http://localhost:5000`. In Docker, Nginx handles the proxy transparently.
 - **No auth**: the role switcher is a dropdown stored in localStorage — sufficient per spec but not production-safe.
 - **SA credentials in config**: `appsettings.json` contains the SA password in plain text. Fine for local dev; would use secrets management in production.
 - **Seed idempotency**: seed data checks for existing rows before inserting. If you change seed data, truncate the tables first.

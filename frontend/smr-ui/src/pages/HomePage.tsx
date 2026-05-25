@@ -17,7 +17,7 @@ export function HomePage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/appointments?date=today')
+    fetch('/api/appointments?date=today')
       .then(r => {
         if (!r.ok) throw new Error('Failed to load appointments')
         return r.json() as Promise<Appointment[]>

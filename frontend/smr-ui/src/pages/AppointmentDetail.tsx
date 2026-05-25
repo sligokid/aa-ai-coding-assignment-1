@@ -33,7 +33,7 @@ export function AppointmentDetail() {
   const [statusUpdating, setStatusUpdating] = useState(false)
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/appointments/${id}`)
+    fetch(`/api/appointments/${id}`)
       .then(r => {
         if (!r.ok) throw new Error('Failed to load appointment')
         return r.json() as Promise<AppointmentDetailData>
@@ -47,7 +47,7 @@ export function AppointmentDetail() {
     if (!noteContent.trim() || !appointment) return
     setSubmittingNote(true)
     try {
-      const r = await fetch(`http://localhost:5000/api/appointments/${id}/notes`, {
+      const r = await fetch(`/api/appointments/${id}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: noteContent.trim() }),
@@ -65,7 +65,7 @@ export function AppointmentDetail() {
     if (!appointment) return
     setStatusUpdating(true)
     try {
-      const r = await fetch(`http://localhost:5000/api/appointments/${id}/status`, {
+      const r = await fetch(`/api/appointments/${id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),

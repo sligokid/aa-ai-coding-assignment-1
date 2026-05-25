@@ -19,7 +19,7 @@ function useAppointments(mechanicId: number, date: string) {
 
   useEffect(() => {
     setLoading(true)
-    fetch(`http://localhost:5000/api/appointments?mechanicId=${mechanicId}&date=${date}`)
+    fetch(`/api/appointments?mechanicId=${mechanicId}&date=${date}`)
       .then(r => {
         if (!r.ok) throw new Error('Failed to load appointments')
         return r.json() as Promise<Appointment[]>

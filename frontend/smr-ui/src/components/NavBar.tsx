@@ -13,7 +13,7 @@ export function NavBar() {
   const [mechanics, setMechanics] = useState<Mechanic[]>([])
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/mechanics')
+    fetch('/api/mechanics')
       .then(r => r.json())
       .then(setMechanics)
       .catch(() => {})

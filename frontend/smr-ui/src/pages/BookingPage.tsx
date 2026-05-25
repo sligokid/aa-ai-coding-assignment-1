@@ -14,7 +14,6 @@ interface BookingConfirmation {
 
 type View = 'picking' | 'booking' | 'confirmed'
 
-const API = 'http://localhost:5000'
 
 function formatDateTime(iso: string) {
   const d = new Date(iso)
@@ -49,7 +48,7 @@ export function BookingPage() {
 
   async function fetchSlots() {
     try {
-      const res = await fetch(`${API}/api/slots`)
+      const res = await fetch(`/api/slots`)
       setSlots(await res.json())
     } catch {
       // network error — leave stale
@@ -61,9 +60,9 @@ export function BookingPage() {
       setLoading(true)
       try {
         const [slotsRes, branchesRes, stRes] = await Promise.all([
-          fetch(`${API}/api/slots`),
-          fetch(`${API}/api/branches`),
-          fetch(`${API}/api/service-types`),
+          fetch(`/api/slots`),
+          fetch(`/api/branches`),
+          fetch(`/api/service-types`),
         ])
         const [slotsData, branchesData, stData] = await Promise.all([
           slotsRes.json(),
@@ -94,7 +93,7 @@ export function BookingPage() {
     if (!selectedSlot || serviceTypeId === '') return
     setSubmitting(true)
     try {
-      const res = await fetch(`${API}/api/appointments`, {
+      const res = await fetch(`/api/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
