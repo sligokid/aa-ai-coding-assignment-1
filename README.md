@@ -16,28 +16,49 @@ An internal web application for the AA Service, Maintenance & Repair team to rep
 
 ## Running the project
 
-### 1. Start the database
+### Option A — Docker (single command)
 
 ```bash
-docker-compose up -d
+docker-compose up --build
+```
+
+Starts SQL Server, the API, and the frontend. Use `--build` when source files have changed; omit it on subsequent runs to use cached images.
+
+| Service    | URL                        |
+|------------|----------------------------|
+| Frontend   | http://localhost           |
+| API        | http://localhost:2000      |
+| Swagger UI | http://localhost:2000/swagger (Development only) |
+| SQL Server | localhost:1433             |
+
+SQL Server takes ~30 seconds to initialise on first run. The API waits for it via a healthcheck before starting.
+
+---
+
+### Option B — Local dev (manual)
+
+#### 1. Start the database
+
+```bash
+docker-compose up sqlserver -d
 ```
 
 Starts SQL Server 2022 on `localhost:1433`. SA password: `SMR_Dev_2024!`
 
-### 2. Start the API
+#### 2. Start the API
 
 ```bash
 cd backend/SmrScheduler.Api
 /opt/homebrew/Cellar/dotnet@8/8.0.127/bin/dotnet run
 ```
 
-- API: `http://localhost:5000`
-- Swagger UI: `http://localhost:5000/swagger`
-- Health check: `http://localhost:5000/api/health`
+- API: `http://localhost:2000`
+- Swagger UI: `http://localhost:2000/swagger`
+- Health check: `http://localhost:2000/api/health`
 
-EF Core migrations run automatically on startup. The first run creates the database and seeds all data.
+EF Core runs `EnsureCreatedAsync` on startup. The first run creates the schema and seeds all data.
 
-### 3. Start the frontend
+#### 3. Start the frontend
 
 ```bash
 cd frontend/smr-ui
@@ -46,6 +67,7 @@ npm run dev
 ```
 
 - App: `http://localhost:5173`
+- API calls are proxied through the Vite dev server (`/api/*` → `http://localhost:2000`)
 
 ---
 
@@ -64,10 +86,11 @@ Uses EF Core InMemory — no Docker required. 12 tests covering reference number
 
 ```
 .
-├── docker-compose.yml          # SQL Server container
+├── docker-compose.yml          # SQL Server + API + frontend containers
 ├── backend/
 │   ├── SmrScheduler.sln
 │   ├── SmrScheduler.Api/       # .NET 8 Web API
+│   │   ├── Dockerfile          # Multi-stage build (sdk:8.0 → aspnet:8.0)
 │   │   ├── Data/               # EF Core DbContext + DbSeeder
 │   │   ├── Migrations/         # EF Core migrations (hand-authored)
 │   │   ├── Models/             # Branch, Mechanic, ServiceType, Slot, Appointment, WorkNote
@@ -80,8 +103,10 @@ Uses EF Core InMemory — no Docker required. 12 tests covering reference number
 │       └── TestWebApplicationFactory.cs
 └── frontend/
     └── smr-ui/                 # Vite React app
+        ├── Dockerfile          # Multi-stage build (node:20 → nginx:alpine)
+        ├── nginx.conf          # Serves SPA; proxies /api/* to API container
         └── src/
-            ├── components/     # NavBar, AppointmentCard, StatusBadge
+            ├── components/     # NavBar, AppointmentCard, StatusBadge, SlotPicker
             ├── context/        # RoleContext (admin/mechanic role + localStorage)
             └── pages/          # HomePage, BookingPage, MechanicPage, AppointmentDetail
 ```
@@ -98,15 +123,16 @@ Uses EF Core InMemory — no Docker required. 12 tests covering reference number
 | Frontend | React 19 + Vite + TypeScript | Fast dev server, strong typing catches bugs at build time |
 | Routing | React Router v7 | Standard SPA routing |
 | Styling | Tailwind CSS v3 | Utility-first; no separate CSS files to maintain |
+| Container | Docker + Nginx | Multi-stage builds; Nginx proxies `/api/*` so frontend and API share one origin |
 
 ---
 
 ## What's done / not done
 
 ### Done
-- [x] SQL Server Docker setup
+- [x] Full Docker setup: `docker-compose up --build` starts all three services
 - [x] .NET 8 Web API with EF Core, Swagger, CORS
-- [x] Auto-migrations and idempotent seed on startup (`EnsureCreatedAsync` + `DbSeeder`)
+- [x] Auto-schema and idempotent seed on startup (`EnsureCreatedAsync` + `DbSeeder`)
 - [x] `GET /api/health`
 - [x] All EF Core entities: `Branch`, `Mechanic`, `ServiceType`, `Slot`, `Appointment`, `WorkNote`
 - [x] Unique index on `Appointments.SlotId` (double-booking guard)
@@ -138,7 +164,6 @@ Uses EF Core InMemory — no Docker required. 12 tests covering reference number
 
 ## Known rough edges
 
-- **Port hardcoded**: the React app fetches `http://localhost:5000` directly. A proper setup would use a Vite proxy or env variable.
 - **No auth**: the role switcher is a dropdown stored in localStorage — sufficient per spec but not production-safe.
 - **SA credentials in config**: `appsettings.json` contains the SA password in plain text. Fine for local dev; would use secrets management in production.
 - **Seed idempotency**: seed data checks for existing rows before inserting. If you change seed data, truncate the tables first.
