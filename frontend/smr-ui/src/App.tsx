@@ -1,40 +1,19 @@
-import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-
-function HealthCheck() {
-  const [status, setStatus] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetch('http://localhost:5000/api/health')
-      .then(res => res.json())
-      .then(data => setStatus(data.status))
-      .catch(() => setError('API unavailable'))
-  }, [])
-
-  return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">SMR Scheduler</h1>
-      <p className="text-gray-600">
-        API health:{' '}
-        {error ? (
-          <span className="text-red-500">{error}</span>
-        ) : status ? (
-          <span className="text-green-600">{status}</span>
-        ) : (
-          <span className="text-gray-400">checking...</span>
-        )}
-      </p>
-    </div>
-  )
-}
+import { RoleProvider } from './context/RoleContext'
+import { NavBar } from './components/NavBar'
+import { HomePage } from './pages/HomePage'
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HealthCheck />} />
-      </Routes>
-    </BrowserRouter>
+    <RoleProvider>
+      <BrowserRouter>
+        <NavBar />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/booking" element={<div className="p-8 text-gray-500">Booking — coming soon</div>} />
+          <Route path="/mechanic" element={<div className="p-8 text-gray-500">Mechanic view — coming soon</div>} />
+        </Routes>
+      </BrowserRouter>
+    </RoleProvider>
   )
 }
