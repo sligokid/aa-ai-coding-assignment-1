@@ -59,12 +59,16 @@ npm run dev
 ├── backend/
 │   ├── SmrScheduler.sln
 │   └── SmrScheduler.Api/       # .NET 8 Web API
-│       ├── Data/               # EF Core DbContext
-│       ├── Migrations/         # EF Core migrations
-│       └── Program.cs
+│       ├── Data/               # EF Core DbContext + DbSeeder
+│       ├── Migrations/         # EF Core migrations (hand-authored)
+│       ├── Models/             # Branch, Mechanic, ServiceType, Slot, Appointment, WorkNote
+│       └── Program.cs          # Minimal API endpoints
 └── frontend/
     └── smr-ui/                 # Vite React app
         └── src/
+            ├── components/     # NavBar, AppointmentCard, StatusBadge
+            ├── context/        # RoleContext (admin/mechanic role + localStorage)
+            └── pages/          # HomePage
 ```
 
 ---
@@ -87,16 +91,26 @@ npm run dev
 ### Done
 - [x] SQL Server Docker setup
 - [x] .NET 8 Web API with EF Core, Swagger, CORS
-- [x] Auto-migrations on startup
+- [x] Auto-migrations and idempotent seed on startup
 - [x] `GET /api/health`
+- [x] All EF Core entities: `Branch`, `Mechanic`, `ServiceType`, `Slot`, `Appointment`, `WorkNote`
+- [x] Unique index on `Appointments.SlotId` (double-booking guard)
+- [x] Seed data: 2 branches, 3 mechanics, 4 service types, ~192 hourly slots
+- [x] `GET /api/mechanics` — all mechanics with branch name
+- [x] `GET /api/appointments?date=today` — today's appointments with mechanic, service type, status
+- [x] `NavBar` with role-switcher dropdown (Admin + each mechanic by name)
+- [x] Role context persisted to `localStorage`; restored on page refresh
+- [x] `HomePage` — today's schedule grouped by mechanic, with `AppointmentCard` and `StatusBadge`
 - [x] Vite React app with Tailwind + React Router
 
 ### Not yet implemented
-- [ ] All EF Core entities and seed data (admin home slice)
-- [ ] `GET /api/appointments`, `GET /api/mechanics`, `GET /api/slots`
-- [ ] `POST /api/appointments` with double-booking prevention
-- [ ] `PATCH /api/appointments/:id/status`, `POST /api/appointments/:id/notes`
-- [ ] BookingPage, MechanicPage, AppointmentDetail, NavBar/role switcher
+- [ ] `GET /api/slots?branchId=&from=&to=` — available slots for booking
+- [ ] `GET /api/branches`, `GET /api/service-types`
+- [ ] `POST /api/appointments` with double-booking prevention and reference number generation
+- [ ] `GET /api/appointments/:id` — full appointment detail
+- [ ] `PATCH /api/appointments/:id/status` with transition validation
+- [ ] `POST /api/appointments/:id/notes`
+- [ ] `BookingPage`, `MechanicPage`, `AppointmentDetail` pages
 - [ ] xUnit test project
 
 ---
@@ -141,4 +155,7 @@ The following prompts drove the main AI-assisted work sessions:
 **Project scaffold (issue 001)**
 > "Scaffold the full project structure end-to-end: docker-compose.yml for SQL Server, .NET 8 Web API with EF Core under backend/SmrScheduler.Api/, Vite React app under frontend/smr-ui/ with React Router and Tailwind CSS. GET /api/health returns 200 OK. dotnet build and npm run build must both pass."
 
-Subsequent slices followed the same pattern: pass the issue file as context, run `/tdd` to implement it, verify feedback loops, commit.
+**Admin home (issue 002)**
+> "Implement issue 002 (Admin Home): all EF Core entities, hand-authored migration, idempotent seed, GET /api/mechanics and GET /api/appointments?date=today endpoints, NavBar with role switcher, RoleContext with localStorage persistence, HomePage grouped by mechanic with AppointmentCard and StatusBadge."
+
+Subsequent slices follow the same pattern: pass the issue file as context, run `/tdd` to implement it, verify feedback loops (`dotnet build` + `npm run build`), commit.
