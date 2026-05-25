@@ -307,3 +307,5 @@ public static class AppointmentStatusHelper
             _ => false
         };
 }
+
+public partial class Program { }
