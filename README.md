@@ -48,9 +48,11 @@ Starts SQL Server 2022 on `localhost:1433`. SA password is read from `.env` (`SA
 
 #### 2. Start the API
 
+Set the password `CHANGE_ME` in `backend/SmrScheduler.Api/appsettings.json` to match your SA password.
+
 ```bash
 cd backend/SmrScheduler.Api
-/opt/homebrew/Cellar/dotnet@8/8.0.127/bin/dotnet run
+dotnet run
 ```
 
 - API: `http://localhost:2000`
