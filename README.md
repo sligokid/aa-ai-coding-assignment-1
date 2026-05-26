@@ -19,6 +19,7 @@ An internal web application for the AA Service, Maintenance & Repair team to rep
 ### Option A — Docker (single command)
 
 ```bash
+cp .env.example .env   # first time only — set SA_PASSWORD if you want a custom password
 docker-compose up --build
 ```
 
@@ -43,7 +44,7 @@ SQL Server takes ~30 seconds to initialise on first run. The API waits for it vi
 docker-compose up sqlserver -d
 ```
 
-Starts SQL Server 2022 on `localhost:1433`. SA password: `SMR_Dev_2024!`
+Starts SQL Server 2022 on `localhost:1433`. SA password is read from `.env` (`SA_PASSWORD`).
 
 #### 2. Start the API
 
@@ -165,7 +166,7 @@ Uses EF Core InMemory — no Docker required. 12 tests covering reference number
 ## Known rough edges
 
 - **No auth**: the role switcher is a dropdown stored in localStorage — sufficient per spec but not production-safe.
-- **SA credentials in config**: `appsettings.json` contains the SA password in plain text. Fine for local dev; would use secrets management in production.
+- **SA credentials**: the SA password is supplied via `.env` (excluded from git). `appsettings.json` uses a `CHANGE_ME` placeholder; override via the `ConnectionStrings__DefaultConnection` environment variable for local dev.
 - **Seed idempotency**: seed data checks for existing rows before inserting. If you change seed data, truncate the tables first.
 
 ---
